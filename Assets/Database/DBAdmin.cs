@@ -6,139 +6,148 @@ using UnityEngine.Networking;
 
 public class DBAdmin : MonoBehaviour
 {
-	public string host, database, dbUser, dbPw;
+    public string host, database, dbUser, dbPw;
 
-	IEnumerator DoQuery(string phpScript, WWWForm form, Action<string> successCallback = null, Action<string> failureCallback = null)
-	{
-		UnityWebRequest www = UnityWebRequest.Post("http://localhost/" + phpScript + ".php", form);
-		yield return www.SendWebRequest();
+    WWWForm CreateForm()
+    {
+        WWWForm form = new WWWForm();
+        form.AddField("host", host);
+        form.AddField("database", database);
+        form.AddField("dbuser", dbUser);
+        form.AddField("dbpw", dbPw);
 
-		if (www.isNetworkError || www.isHttpError)
-		{
-			Debug.Log(www.error);
-		}
-		else
-		{
-			Debug.Log("count: " + www.downloadHandler.text.Length);
-			if (www.downloadHandler.text[0] == '0')
-			{
-				Debug.Log("Ok");
-				successCallback?.Invoke(www.downloadHandler.text);
-			}
-			else
-			{
-				Debug.Log("Fail");
-				failureCallback?.Invoke(www.downloadHandler.text);
-			}
-		}
-	}
+        return form;
+    }
 
-	WWWForm CreateForm()
-	{
-		WWWForm form = new WWWForm();
-		form.AddField("host", host);
-		form.AddField("database", database);
-		form.AddField("dbuser", dbUser);
-		form.AddField("dbpw", dbPw);
+    IEnumerator DoQuery(string phpScript, WWWForm form, Action<string> successCallback = null, Action<string> failureCallback = null)
+    {
+        UnityWebRequest www = UnityWebRequest.Post("http://localhost/" + host + "/" + phpScript + ".php", form);
+        yield return www.SendWebRequest();
 
-		return form;
-	}
+        if (www.isNetworkError || www.isHttpError)
+        {
+            Debug.Log(www.error);
+        }
+        else
+        {
+            //Debug.Log("count: " + www.downloadHandler.text.Length);
+            if (www.downloadHandler.text[0] == '0')
+            {
+                Debug.Log("Ok");
+                successCallback?.Invoke(www.downloadHandler.text);
+            }
+            else
+            {
+                Debug.Log("Fail");
+                failureCallback?.Invoke(www.downloadHandler.text);
+            }
+        }
+    }
 
-	public void Register(string username, string password)
-	{
-		WWWForm form = CreateForm();
-		form.AddField("user", username);
-		form.AddField("pass", password);
+    public void Register(string username, string password)
+    {
+        Debug.Log("register query");
+        WWWForm form = CreateForm();
+        form.AddField("user", username);
+        form.AddField("pass", password);
 
-		StartCoroutine(DoQuery("register", form));
-	}
+        StartCoroutine(DoQuery("register", form));
+    }
 
-	public void Login(string username, string password, Action<string> successCallback, Action<string> failureCallback)
-	{
-		WWWForm form = CreateForm();
+    public void Login(string username, string password, Action<string> successCallback, Action<string> failureCallback)
+    {
+        Debug.Log("login query");
+        WWWForm form = CreateForm();
+        string query = "SELECT Username FROM `accounts` WHERE Username = ('" + username + "') AND Password = ('" + password + "');";
+        form.AddField("query", query);
 
-		string query = "SELECT Username FROM `accounts` WHERE Username = ('" + username + "') AND Password = ('" + password + "');";
-		form.AddField("query", query);
+        StartCoroutine(DoQuery("login", form, successCallback, failureCallback));
+    }
 
-		StartCoroutine(DoQuery("login", form, successCallback, failureCallback));
-	}
+    public void SetScore(string username, string score)
+    {
+        Debug.Log("setscore query");
+        WWWForm form = CreateForm();
+        form.AddField("user", username);
+        form.AddField("score", score);
 
-	public void SetScore(string username, string score)
-	{
-		WWWForm form = CreateForm();
-		form.AddField("user", username);
-		form.AddField("score", score);
+        StartCoroutine(DoQuery("setscore", form));
+    }
 
-		StartCoroutine(DoQuery("setscore", form));
-	}
+    public void GetScore(string username, Action<string> successCallback, Action<string> failureCallback)
+    {
+        Debug.Log("getscore query");
+        WWWForm form = CreateForm();
+        string query = "SELECT score FROM `highscores` WHERE user = ('" + username + "');";
+        form.AddField("query", query);
 
-	public void GetScore(string username, Action<string> successCallback, Action<string> failureCallback)
-	{
-		WWWForm form = CreateForm();
+        StartCoroutine(DoQuery("getscore", form, successCallback, failureCallback));
+    }
 
-		string query = "SELECT score FROM `highscores` WHERE user = ('" + username + "');";
-		form.AddField("query", query);
+    public void DeleteScore(string username, Action<string> successCallback)
+    {
+        Debug.Log("deletescore query");
+        WWWForm form = CreateForm();
+        form.AddField("user", username);
 
-		StartCoroutine(DoQuery("getscore", form, successCallback, failureCallback));
-	}
+        StartCoroutine(DoQuery("deletescore", form, successCallback));
+    }
 
-	public void DeleteScore(string username, Action<string> successCallback)
-	{
-		WWWForm form = CreateForm();
+    public void SendFriendRequest(string userA, string userB, Action<string> successCallback, Action<string> failureCallback)
+    {
+        if (userA == userB)
+        {
+            Debug.Log("Can't send a request to yourself");
+            return;
+        }
 
-		form.AddField("user", username);
+        Debug.Log("sendfriend query");
+        WWWForm form = CreateForm();
+        form.AddField("userA", userA);
+        form.AddField("userB", userB);
 
-		StartCoroutine(DoQuery("deletescore", form, successCallback));
-	}
+        StartCoroutine(DoQuery("sendfriend", form, successCallback, failureCallback));
+    }
 
-	public void SendFriendRequest(string userA, string userB, Action<string> successCallback, Action<string> failureCallback)
-	{
-		if (userA == userB)
-		{
-			Debug.Log("Can't send a request to yourself");
-			return;
-		}
+    public void DeleteFriendRequest(string userA, string userB, Action<string> successCallback, Action<string> failureCallback)
+    {
+        Debug.Log("deletefriend query");
+        WWWForm form = CreateForm();
+        form.AddField("userA", userA);
+        form.AddField("userB", userB);
 
-		WWWForm form = CreateForm();
-		form.AddField("userA", userA);
-		form.AddField("userB", userB);
-		StartCoroutine(DoQuery("sendfriend", form, successCallback, failureCallback));
-	}
+        StartCoroutine(DoQuery("deletefriend", form, successCallback, failureCallback));
+    }
 
-	public void DeleteFriendRequest(string userA, string userB, Action<string> successCallback, Action<string> failureCallback)
-	{
-		WWWForm form = CreateForm();
-		form.AddField("userA", userA);
-		form.AddField("userB", userB);
+    //Nico
+    public void CheckRequests(string user, Action<string> successCallback, Action<string> failureCallback)
+    {
+        Debug.Log("checkrequest query");
+        WWWForm form = CreateForm();
+        string query = "SELECT user1 FROM `friendlist` WHERE user2 = '" + user + "' AND FriendStatus = 0";
+        form.AddField("query", query);
 
-		StartCoroutine(DoQuery("deletefriend", form, successCallback, failureCallback));
-	}
+        StartCoroutine(DoQuery("checkrequest", form, successCallback, failureCallback));
+    }
 
-	//Nico
-	public void CheckRequests(string user, Action<string> successCallback, Action<string> failureCallback)
-	{
-		WWWForm form = CreateForm();
+    //Nico
+    public void AcceptRequests(string userA, string userB, Action<string> successCallback, Action<string> failureCallback)
+    {
+        Debug.Log("acceptrequest query");
+        WWWForm form = CreateForm();
+        string query = "UPDATE `friendlist` SET `FriendStatus` = 1 WHERE user1 = '" + userB + "' AND user2 = '" + userA + "' AND FriendStatus = 0";
+        form.AddField("query", query);
 
-		string query = "SELECT user1 FROM `friendlist` WHERE user2 = '" + user + "' AND FriendStatus = 0";
-		form.AddField("query", query);
+        StartCoroutine(DoQuery("acceptrequest", form, successCallback, failureCallback));
+    }
 
-		StartCoroutine(DoQuery("checkrequest", form, successCallback, failureCallback));
-	}
+    public void CheckFriendList(string users, Action<string> successCallback, Action<string> failureCallback)
+    {
+        Debug.Log("checkfriendlist query");
+        WWWForm form = CreateForm();
+        form.AddField("users", users);
 
-	//Nico
-	public void AcceptRequests(string userA, string userB, Action<string> successCallback, Action<string> failureCallback)
-	{
-		WWWForm form = CreateForm();
-		string query = "UPDATE `friendlist` SET `FriendStatus` = 1 WHERE user1 = '" + userB + "' AND user2 = '" + userA + "' AND FriendStatus = 0";
-		form.AddField("query", query);
+        StartCoroutine(DoQuery("checkfriendlist", form, successCallback, failureCallback));
+    }
 
-		StartCoroutine(DoQuery("acceptrequest", form, successCallback, failureCallback));
-	}
-
-	public void CheckFriendList(string users, Action<string> successCallback, Action<string> failureCallback)
-	{
-		WWWForm form = CreateForm();
-		form.AddField("users", users);
-		StartCoroutine(DoQuery("checkfriendlist", form, successCallback, failureCallback));
-	}
 }
