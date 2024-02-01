@@ -3,4 +3,4 @@ AnnotationsRedes
 * To create tables from already created tables need to import the scripts from the folder ExampleBase to the phpmyadmin.
 * For using the already created scrips need to have the localhost/hostName/script.php -> the hostName is the folder that you create by hand inside the www folder if you are using Wampserver ,
 	if using XAMP the folder go inside other folder (have to search name of folder).
-* 
+* UserName = root , password 0000
